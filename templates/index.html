@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO₂ Emission Predictor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0a0a;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 199, 255, 0.2) 0%, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #ffffff;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(45deg, transparent 48%, rgba(68, 68, 68, 0.03) 49%, rgba(68, 68, 68, 0.03) 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, rgba(68, 68, 68, 0.03) 49%, rgba(68, 68, 68, 0.03) 51%, transparent 52%);
+            background-size: 20px 20px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 
+                0 32px 64px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 48px;
+            width: 100%;
+            max-width: 520px;
+            animation: slideUp 0.8s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.03),
+                transparent
+            );
+            animation: shimmer 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h2 {
+            color: #ffffff;
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff, #a0a0a0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .header .subtitle {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+
+        .eco-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 28px;
+            box-shadow: 
+                0 0 30px rgba(0, 255, 136, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2);
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 40px rgba(0, 255, 136, 0.5);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-group label {
+            display: block;
+            color: #e0e0e0;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 18px 24px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            font-size: 16px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .form-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 16px center;
+            background-repeat: no-repeat;
+            background-size: 20px;
+            padding-right: 60px;
+            cursor: pointer;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 
+                0 0 0 4px rgba(0, 255, 136, 0.2),
+                0 8px 25px rgba(0, 255, 136, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .form-group input:hover,
+        .form-group select:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .form-group select:focus {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300ff88' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        }
+
+        .form-group select option {
+            padding: 12px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 16px;
+            border: none;
+        }
+
+        .form-group select option:disabled {
+            color: #666;
+        }
+
+        .predict-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #00ff88, #00cc66, #00aa55);
+            color: #000;
+            border: none;
+            padding: 20px 32px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 8px 25px rgba(0, 255, 136, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .predict-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: left 0.6s;
+        }
+
+        .predict-btn:hover::before {
+            left: 100%;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 35px rgba(0, 255, 136, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .predict-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .result {
+            margin-top: 32px;
+            padding: 24px;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 204, 102, 0.1));
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+            border-radius: 16px;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        .result h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 20px;
+            top: 60%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group:focus-within .input-icon {
+            color: #00ff88;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 32px 24px;
+                margin: 10px;
+            }
+            
+            .header h2 {
+                font-size: 2rem;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 16px 20px;
+            }
+        }
+
+        /* Loading state for button */
+        .predict-btn.loading {
+            opacity: 0.8;
+            cursor: not-allowed;
+            background: linear-gradient(135deg, #666, #555);
+        }
+
+        .predict-btn.loading::after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            margin-left: 12px;
+            border: 2px solid transparent;
+            border-top: 2px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Custom scrollbar for select dropdown */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 136, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 136, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="eco-icon">🌱</div>
+            <h2>CO₂ Emission Predictor</h2>
+            <p class="subtitle">Calculate your vehicle's environmental impact</p>
+        </div>
+
+        <form method="POST" action="/predict" id="predictionForm">
+            <div class="form-group">
+                <label for="engine_size">Engine Size (L)</label>
+                <input type="number" 
+                       id="engine_size" 
+                       name="engine_size" 
+                       step="0.1" 
+                       min="0.5" 
+                       max="10" 
+                       placeholder="e.g., 2.0" 
+                       required>
+                <span class="input-icon">⚙️</span>
+            </div>
+
+            <div class="form-group">
+                <label for="cylinders">Cylinders</label>
+                <input type="number" 
+                       id="cylinders" 
+                       name="cylinders" 
+                       min="1" 
+                       max="16" 
+                       placeholder="e.g., 4" 
+                       required>
+                <span class="input-icon">🔧</span>
+            </div>
+
+            <div class="form-group">
+                <label for="fuel_consumption">Fuel Consumption (L/100 km)</label>
+                <input type="number" 
+                       id="fuel_consumption" 
+                       name="fuel_consumption" 
+                       step="0.1" 
+                       min="1" 
+                       max="50" 
+                       placeholder="e.g., 8.5" 
+                       required>
+                <span class="input-icon">⛽</span>
+            </div>
+
+            <div class="form-group">
+                <label for="vehicle_class">Vehicle Class</label>
+                <select id="vehicle_class" name="vehicle_class" required>
+                    <option value="" disabled selected>Select Vehicle Class</option>
+                    <option value="Compact">Compact</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="Pickup">Pickup</option>
+                    <option value="Minivan">Minivan</option>
+                    <option value="Station Wagon">Station Wagon</option>
+                    <option value="Convertible">Convertible</option>
+                    <option value="Coupe">Coupe</option>
+                    <option value="Luxury">Luxury</option>
+                    <option value="Other">Other</option>
+                </select>
+                <span class="input-icon">🚗</span>
+            </div>
+
+            <button type="submit" class="predict-btn" id="submitBtn">
+                Calculate Emissions
+            </button>
+        </form>
+
+        {% if prediction_text %}
+        <div class="result">
+            <h3>{{ prediction_text }}</h3>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Add loading state to button on form submission
+        document.getElementById('predictionForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            btn.classList.add('loading');
+            btn.textContent = 'Calculating...';
+        });
+
+        // Add smooth focus transitions
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentNode.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentNode.style.transform = 'scale(1)';
+            });
+        });
+
+        // Add subtle particle animation
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.width = '2px';
+            particle.style.height = '2px';
+            particle.style.background = 'rgba(0, 255, 136, 0.5)';
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '-1';
+            
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            
+            document.body.appendChild(particle);
+            
+            const animation = particle.animate([
+                { transform: 'translate(0, 0) scale(0)', opacity: 0 },
+                { transform: 'translate(0, -100px) scale(1)', opacity: 1 },
+                { transform: 'translate(0, -200px) scale(0)', opacity: 0 }
+            ], {
+                duration: 3000,
+                easing: 'ease-out'
+            });
+            
+            animation.onfinish = () => particle.remove();
+        }
+
+        // Create particles occasionally
+        setInterval(createParticle, 2000);
+    </script>
+</body>
+</html>
